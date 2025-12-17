@@ -1,5 +1,5 @@
-#ifndef MODELWIDGET3_H
-#define MODELWIDGET3_H
+#ifndef MODELWIDGET6_H
+#define MODELWIDGET6_H
 
 #include <QWidget>
 #include <QMap>
@@ -11,21 +11,22 @@
 #include "mousezoom.h"
 #include "chartsetting1.h"
 
-// 定义数据类型: <时间t, 压力p, 导数dp>
+// 定义模型曲线数据类型: 时间, 压力, 压力导数
 typedef std::tuple<QVector<double>, QVector<double>, QVector<double>> ModelCurveData;
 
 namespace Ui {
-class ModelWidget3;
+class ModelWidget6;
 }
 
-class ModelWidget3 : public QWidget
+class ModelWidget6 : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit ModelWidget3(QWidget *parent = nullptr);
-    ~ModelWidget3();
+    explicit ModelWidget6(QWidget *parent = nullptr);
+    ~ModelWidget6();
 
+    // 计算理论曲线
     ModelCurveData calculateTheoreticalCurve(const QMap<QString, double>& params,
                                              const QVector<double>& providedTime = QVector<double>());
 
@@ -54,16 +55,17 @@ private:
     void runCalculation();
     void plotCurve(const ModelCurveData& data, const QString& name, QColor color, bool isSensitivity);
 
-    // --- 数学核心 ---
     void calculatePDandDeriv(const QVector<double>& tD, const QMap<QString, double>& params,
                              std::function<double(double, const QMap<QString, double>&)> laplaceFunc,
                              QVector<double>& outPD, QVector<double>& outDeriv);
 
+    // 拉普拉斯空间解函数 (复合油藏)
     double flaplace_composite(double z, const QMap<QString, double>& p);
 
-    // [修改] 增加 reD 参数用于封闭边界计算
+    // 无穷大/有界地层压力解 (包含 reD 参数)
     double PWD_inf(double z, double fs1, double fs2, double M12, double LfD, double rmD, double reD, int nf, const QVector<double>& xwD);
 
+    // 辅助数学函数
     double scaled_besseli(int v, double x);
     double adaptiveGauss(std::function<double(double)> f, double a, double b, double eps, int depth, int maxDepth);
     double gauss15(std::function<double(double)> f, double a, double b);
@@ -71,7 +73,7 @@ private:
     double factorial(int n);
 
 private:
-    Ui::ModelWidget3 *ui;
+    Ui::ModelWidget6 *ui;
     MouseZoom *m_plot;
     QCPTextElement *m_plotTitle;
     bool m_highPrecision;
@@ -83,4 +85,4 @@ private:
     QList<QColor> m_colorList;
 };
 
-#endif // MODELWIDGET3_H
+#endif // MODELWIDGET6_H

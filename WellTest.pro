@@ -24,11 +24,17 @@ win32: LIBS += -lm
 # Input
 HEADERS += dataeditorwidget.h \
            chartsetting1.h \
+           fittingpage.h \
            fittingwidget.h \
            modelmanager.h \
+           modelparameter.h \
+           modelselect.h \
            modelwidget1.h \
            modelwidget2.h \
            modelwidget3.h \
+           modelwidget4.h \
+           modelwidget5.h \
+           modelwidget6.h \
            mousezoom.h \
            plottingwidget.h \
            mainwindow.h \
@@ -42,10 +48,15 @@ HEADERS += dataeditorwidget.h \
            qcustomplot.h
 
 FORMS += dataeditorwidget.ui \
+         fittingpage.ui \
          fittingwidget.ui \
+         modelselect.ui \
          modelwidget1.ui \
          modelwidget2.ui \
          modelwidget3.ui \
+         modelwidget4.ui \
+         modelwidget5.ui \
+         modelwidget6.ui \
          plottingwidget.ui \
          mainwindow.ui \
          monitorbtn.ui \
@@ -57,11 +68,17 @@ FORMS += dataeditorwidget.ui \
 
 SOURCES += DataEditorWidget.cpp \
            chartsetting1.cpp \
+           fittingpage.cpp \
            fittingwidget.cpp \
            modelmanager.cpp \
+           modelparameter.cpp \
+           modelselect.cpp \
            modelwidget1.cpp \
            modelwidget2.cpp \
            modelwidget3.cpp \
+           modelwidget4.cpp \
+           modelwidget5.cpp \
+           modelwidget6.cpp \
            mousezoom.cpp \
            plottingwidget.cpp \
            plotwindow.cpp \

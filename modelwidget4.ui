@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ModelWidget1</class>
- <widget class="QWidget" name="ModelWidget1">
+ <class>ModelWidget4</class>
+ <widget class="QWidget" name="ModelWidget4">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ModelWidget1 - 变井储压裂水平井</string>
+   <string>ModelWidget4 - 恒定井储封闭边界</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget { color: black; font-family: &quot;Microsoft YaHei&quot;; font-size: 10pt; } QGroupBox { font-weight: bold; border: 1px solid gray; margin-top: 10px; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; } QLineEdit { padding: 2px; } QLabel { padding-right: 5px; }</string>
@@ -20,7 +20,7 @@
    <item>
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <widget class="QWidget" name="leftPanel" native="true">
       <property name="maximumSize">
@@ -237,6 +237,16 @@
            <widget class="QLineEdit" name="remda1Edit"/>
           </item>
           <item row="10" column="0">
+           <widget class="QLabel" name="label_reD">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;外边界半径 r&lt;sub&gt;eD&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="1">
+           <widget class="QLineEdit" name="reDEdit"/>
+          </item>
+          <item row="11" column="0">
            <widget class="QLabel" name="label_gamaD">
             <property name="styleSheet">
              <string notr="true">color: blue; font-weight: bold;</string>
@@ -244,33 +254,10 @@
             <property name="text">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;压敏系数 γ&lt;sub&gt;D&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <property name="toolTip">
-             <string>渗透率模量</string>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="1">
-           <widget class="QLineEdit" name="gamaDEdit"/>
-          </item>
-          <item row="11" column="0">
-           <widget class="QLabel" name="label_cD">
-            <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;井筒储集 C&lt;sub&gt;D&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
            </widget>
           </item>
           <item row="11" column="1">
-           <widget class="QLineEdit" name="cDEdit"/>
-          </item>
-          <item row="12" column="0">
-           <widget class="QLabel" name="label_s">
-            <property name="text">
-             <string>表皮系数 S:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="1">
-           <widget class="QLineEdit" name="sEdit"/>
+           <widget class="QLineEdit" name="gamaDEdit"/>
           </item>
          </layout>
         </widget>
@@ -332,7 +319,7 @@
              <item>
               <widget class="Line" name="line">
                <property name="orientation">
-                <enum>Qt::Vertical</enum>
+                <enum>Qt::Orientation::Vertical</enum>
                </property>
               </widget>
              </item>
@@ -353,7 +340,7 @@
              <item>
               <spacer name="horizontalSpacer">
                <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+                <enum>Qt::Orientation::Horizontal</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>

@@ -1,5 +1,5 @@
-#include "modelwidget3.h"
-#include "ui_modelwidget3.h"
+#include "modelwidget5.h"
+#include "ui_modelwidget5.h"
 #include "modelmanager.h"
 #include "pressurederivativecalculator.h"
 #include "modelparameter.h"
@@ -20,8 +20,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// 构造函数
-ModelWidget3::ModelWidget3(QWidget *parent) : QWidget(parent), ui(new Ui::ModelWidget3), m_highPrecision(true) {
+ModelWidget5::ModelWidget5(QWidget *parent) : QWidget(parent), ui(new Ui::ModelWidget5), m_highPrecision(true) {
     ui->setupUi(this);
     initChart();
     m_colorList = { Qt::red, Qt::blue, QColor(0,180,0), Qt::magenta, QColor(255,140,0), Qt::cyan };
@@ -29,9 +28,9 @@ ModelWidget3::ModelWidget3(QWidget *parent) : QWidget(parent), ui(new Ui::ModelW
     onResetParameters();
 }
 
-ModelWidget3::~ModelWidget3() { delete ui; }
+ModelWidget5::~ModelWidget5() { delete ui; }
 
-void ModelWidget3::initChart() {
+void ModelWidget5::initChart() {
     QVBoxLayout* layout = new QVBoxLayout(ui->chartContainer);
     layout->setContentsMargins(0,0,0,0);
     m_plot = new MouseZoom(this);
@@ -70,8 +69,7 @@ void ModelWidget3::initChart() {
     m_plot->xAxis->setRange(1e-3, 1e3); m_plot->yAxis->setRange(1e-3, 1e2);
 
     m_plot->plotLayout()->insertRow(0);
-    // [修改] 标题更新
-    m_plotTitle = new QCPTextElement(m_plot, "复合页岩油储层试井曲线 (模型3: 变井储+封闭边界)", QFont("SimHei", 14, QFont::Bold));
+    m_plotTitle = new QCPTextElement(m_plot, "复合页岩油储层试井曲线 (模型5: 定压边界)", QFont("SimHei", 14, QFont::Bold));
     m_plot->plotLayout()->addElement(0, 0, m_plotTitle);
 
     m_plot->legend->setVisible(true);
@@ -79,22 +77,22 @@ void ModelWidget3::initChart() {
     m_plot->legend->setBrush(QBrush(QColor(255, 255, 255, 200)));
 }
 
-void ModelWidget3::setupConnections() {
-    connect(ui->calculateButton, &QPushButton::clicked, this, &ModelWidget3::onCalculateClicked);
-    connect(ui->resetButton, &QPushButton::clicked, this, &ModelWidget3::onResetParameters);
-    connect(ui->btnExportData, &QPushButton::clicked, this, &ModelWidget3::onExportData);
-    connect(ui->btnExportImage, &QPushButton::clicked, this, &ModelWidget3::onExportImage);
-    connect(ui->resetViewButton, &QPushButton::clicked, this, &ModelWidget3::onResetView);
-    connect(ui->fitToDataButton, &QPushButton::clicked, this, &ModelWidget3::onFitToData);
-    connect(ui->chartSettingsButton, &QPushButton::clicked, this, &ModelWidget3::onChartSettings);
-    connect(ui->LEdit, &QLineEdit::editingFinished, this, &ModelWidget3::onDependentParamsChanged);
-    connect(ui->LfEdit, &QLineEdit::editingFinished, this, &ModelWidget3::onDependentParamsChanged);
-    connect(ui->checkShowPoints, &QCheckBox::toggled, this, &ModelWidget3::onShowPointsToggled);
+void ModelWidget5::setupConnections() {
+    connect(ui->calculateButton, &QPushButton::clicked, this, &ModelWidget5::onCalculateClicked);
+    connect(ui->resetButton, &QPushButton::clicked, this, &ModelWidget5::onResetParameters);
+    connect(ui->btnExportData, &QPushButton::clicked, this, &ModelWidget5::onExportData);
+    connect(ui->btnExportImage, &QPushButton::clicked, this, &ModelWidget5::onExportImage);
+    connect(ui->resetViewButton, &QPushButton::clicked, this, &ModelWidget5::onResetView);
+    connect(ui->fitToDataButton, &QPushButton::clicked, this, &ModelWidget5::onFitToData);
+    connect(ui->chartSettingsButton, &QPushButton::clicked, this, &ModelWidget5::onChartSettings);
+    connect(ui->LEdit, &QLineEdit::editingFinished, this, &ModelWidget5::onDependentParamsChanged);
+    connect(ui->LfEdit, &QLineEdit::editingFinished, this, &ModelWidget5::onDependentParamsChanged);
+    connect(ui->checkShowPoints, &QCheckBox::toggled, this, &ModelWidget5::onShowPointsToggled);
 }
 
-void ModelWidget3::setHighPrecision(bool high) { m_highPrecision = high; }
+void ModelWidget5::setHighPrecision(bool high) { m_highPrecision = high; }
 
-QVector<double> ModelWidget3::parseInput(const QString& text) {
+QVector<double> ModelWidget5::parseInput(const QString& text) {
     QVector<double> values;
     QString cleanText = text;
     cleanText.replace("，", ",");
@@ -108,12 +106,12 @@ QVector<double> ModelWidget3::parseInput(const QString& text) {
     return values;
 }
 
-void ModelWidget3::setInputText(QLineEdit* edit, double value) {
+void ModelWidget5::setInputText(QLineEdit* edit, double value) {
     if(!edit) return;
     edit->setText(QString::number(value, 'g', 8));
 }
 
-void ModelWidget3::onResetParameters() {
+void ModelWidget5::onResetParameters() {
     ModelParameter* mp = ModelParameter::instance();
 
     setInputText(ui->phiEdit, mp->getPhi());
@@ -136,35 +134,33 @@ void ModelWidget3::onResetParameters() {
     setInputText(ui->omga2Edit, 0.08);
     setInputText(ui->remda1Edit, 0.001);
 
-    // [新增] 封闭边界半径 reD
+    // reD
     setInputText(ui->reDEdit, 10.0);
 
     setInputText(ui->gamaDEdit, 0.02);
-
-    // Model 3 (变井储) 需要 CD 和 S
     setInputText(ui->cDEdit, 0.01);
     setInputText(ui->sEdit, 1.0);
 
     onDependentParamsChanged();
 }
 
-void ModelWidget3::onDependentParamsChanged() {
+void ModelWidget5::onDependentParamsChanged() {
     double L = parseInput(ui->LEdit->text()).first();
     double Lf = parseInput(ui->LfEdit->text()).first();
     if (L > 1e-9) setInputText(ui->LfDEdit, Lf / L);
     else setInputText(ui->LfDEdit, 0.0);
 }
 
-void ModelWidget3::onResetView() { m_plot->rescaleAxes(); m_plot->replot(); }
-void ModelWidget3::onFitToData() {
+void ModelWidget5::onResetView() { m_plot->rescaleAxes(); m_plot->replot(); }
+void ModelWidget5::onFitToData() {
     m_plot->rescaleAxes();
     if(m_plot->xAxis->range().lower <= 0) m_plot->xAxis->setRangeLower(1e-3);
     if(m_plot->yAxis->range().lower <= 0) m_plot->yAxis->setRangeLower(1e-3);
     m_plot->replot();
 }
-void ModelWidget3::onChartSettings() { ChartSetting1 dlg(m_plot, m_plotTitle, this); dlg.exec(); }
+void ModelWidget5::onChartSettings() { ChartSetting1 dlg(m_plot, m_plotTitle, this); dlg.exec(); }
 
-void ModelWidget3::onShowPointsToggled(bool checked) {
+void ModelWidget5::onShowPointsToggled(bool checked) {
     for(int i = 0; i < m_plot->graphCount(); ++i) {
         if (checked) m_plot->graph(i)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
         else m_plot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
@@ -172,7 +168,7 @@ void ModelWidget3::onShowPointsToggled(bool checked) {
     m_plot->replot();
 }
 
-void ModelWidget3::onCalculateClicked() {
+void ModelWidget5::onCalculateClicked() {
     ui->calculateButton->setEnabled(false);
     ui->calculateButton->setText("计算中...");
     QCoreApplication::processEvents();
@@ -181,7 +177,7 @@ void ModelWidget3::onCalculateClicked() {
     ui->calculateButton->setText("开始计算");
 }
 
-void ModelWidget3::runCalculation() {
+void ModelWidget5::runCalculation() {
     m_plot->clearGraphs();
 
     QMap<QString, QVector<double>> rawParams;
@@ -202,8 +198,6 @@ void ModelWidget3::runCalculation() {
     rawParams["omega1"] = parseInput(ui->omga1Edit->text());
     rawParams["omega2"] = parseInput(ui->omga2Edit->text());
     rawParams["lambda1"] = parseInput(ui->remda1Edit->text());
-
-    // [新增] 读取 reD
     rawParams["reD"] = parseInput(ui->reDEdit->text());
 
     rawParams["gamaD"] = parseInput(ui->gamaDEdit->text());
@@ -241,7 +235,7 @@ void ModelWidget3::runCalculation() {
     int iterations = isSensitivity ? sensitivityValues.size() : 1;
     iterations = qMin(iterations, m_colorList.size());
 
-    QString resultTextHeader = "计算完成 (模型3)\n";
+    QString resultTextHeader = "计算完成 (模型5)\n";
     if(isSensitivity) resultTextHeader += QString("敏感性参数: %1\n").arg(sensitivityKey);
 
     for(int i = 0; i < iterations; ++i) {
@@ -277,10 +271,10 @@ void ModelWidget3::runCalculation() {
 
     onFitToData();
     onShowPointsToggled(ui->checkShowPoints->isChecked());
-    emit calculationCompleted("Model3_Composite_Closed_VariableStorage", baseParams);
+    emit calculationCompleted("Model5_Composite_ConstP_VarStorage", baseParams);
 }
 
-void ModelWidget3::plotCurve(const ModelCurveData& data, const QString& name, QColor color, bool isSensitivity) {
+void ModelWidget5::plotCurve(const ModelCurveData& data, const QString& name, QColor color, bool isSensitivity) {
     const QVector<double>& t = std::get<0>(data);
     const QVector<double>& p = std::get<1>(data);
     const QVector<double>& d = std::get<2>(data);
@@ -304,13 +298,11 @@ void ModelWidget3::plotCurve(const ModelCurveData& data, const QString& name, QC
     }
 }
 
-void ModelWidget3::onExportData() {
+void ModelWidget5::onExportData() {
     if (res_tD.isEmpty()) return;
-
     QString defaultDir = ModelParameter::instance()->getProjectPath();
     if(defaultDir.isEmpty()) defaultDir = ".";
-
-    QString path = QFileDialog::getSaveFileName(this, "导出CSV数据", defaultDir + "/Model3_Data.csv", "CSV Files (*.csv)");
+    QString path = QFileDialog::getSaveFileName(this, "导出CSV数据", defaultDir + "/Model5_Data.csv", "CSV Files (*.csv)");
     if (path.isEmpty()) return;
     QFile f(path);
     if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -325,11 +317,10 @@ void ModelWidget3::onExportData() {
     }
 }
 
-void ModelWidget3::onExportImage() {
+void ModelWidget5::onExportImage() {
     QString defaultDir = ModelParameter::instance()->getProjectPath();
     if(defaultDir.isEmpty()) defaultDir = ".";
-
-    QString path = QFileDialog::getSaveFileName(this, "导出图表图片", defaultDir + "/Model3_Chart.png", "PNG Image (*.png);;JPEG Image (*.jpg);;PDF Document (*.pdf)");
+    QString path = QFileDialog::getSaveFileName(this, "导出图表图片", defaultDir + "/Model5_Chart.png", "PNG Image (*.png);;JPEG Image (*.jpg);;PDF Document (*.pdf)");
     if (path.isEmpty()) return;
     bool success = false;
     if (path.endsWith(".png", Qt::CaseInsensitive)) success = m_plot->savePng(path);
@@ -340,7 +331,7 @@ void ModelWidget3::onExportImage() {
     else QMessageBox::critical(this, "错误", "导出图表失败。");
 }
 
-ModelCurveData ModelWidget3::calculateTheoreticalCurve(const QMap<QString, double>& params, const QVector<double>& providedTime)
+ModelCurveData ModelWidget5::calculateTheoreticalCurve(const QMap<QString, double>& params, const QVector<double>& providedTime)
 {
     QVector<double> tPoints = providedTime;
     if (tPoints.isEmpty()) {
@@ -364,7 +355,7 @@ ModelCurveData ModelWidget3::calculateTheoreticalCurve(const QMap<QString, doubl
     }
 
     QVector<double> PD_vec, Deriv_vec;
-    auto func = std::bind(&ModelWidget3::flaplace_composite, this, std::placeholders::_1, std::placeholders::_2);
+    auto func = std::bind(&ModelWidget5::flaplace_composite, this, std::placeholders::_1, std::placeholders::_2);
     calculatePDandDeriv(tD_vec, params, func, PD_vec, Deriv_vec);
 
     double factor = 1.842e-3 * q * mu * B / (kf * h);
@@ -378,7 +369,7 @@ ModelCurveData ModelWidget3::calculateTheoreticalCurve(const QMap<QString, doubl
     return std::make_tuple(tPoints, finalP, finalDP);
 }
 
-void ModelWidget3::calculatePDandDeriv(const QVector<double>& tD, const QMap<QString, double>& params,
+void ModelWidget5::calculatePDandDeriv(const QVector<double>& tD, const QMap<QString, double>& params,
                                        std::function<double(double, const QMap<QString, double>&)> laplaceFunc,
                                        QVector<double>& outPD, QVector<double>& outDeriv)
 {
@@ -416,15 +407,16 @@ void ModelWidget3::calculatePDandDeriv(const QVector<double>& tD, const QMap<QSt
     else outDeriv.fill(0.0);
 }
 
-double ModelWidget3::flaplace_composite(double z, const QMap<QString, double>& p) {
+double ModelWidget5::flaplace_composite(double z, const QMap<QString, double>& p) {
     double kf = p.value("kf");
     double km = p.value("km");
     double LfD = p.value("LfD");
     double rmD = p.value("rmD");
-    double reD = p.value("reD", 10.0); // 获取外边界
     double omga1 = p.value("omega1");
     double omga2 = p.value("omega2");
     double remda1 = p.value("lambda1");
+    double reD = p.value("reD", 10.0);
+
     int nf = (int)p.value("nf", 4); if(nf < 1) nf = 1;
     double M12 = kf / km;
     QVector<double> xwD;
@@ -435,81 +427,40 @@ double ModelWidget3::flaplace_composite(double z, const QMap<QString, double>& p
     double temp = omga2;
     double fs1 = omga1 + remda1 * temp / (remda1 + z * temp);
     double fs2 = M12 * temp;
-
-    // 调用更新后的 PWD_inf (含 reD)
     double pf = PWD_inf(z, fs1, fs2, M12, LfD, rmD, reD, nf, xwD);
-
     double CD = p.value("cD", 0.0); double S = p.value("S", 0.0);
     if (CD > 1e-12 || std::abs(S) > 1e-12) pf = (z * pf + S) / (z + CD * z * z * (z * pf + S));
     return pf;
 }
 
-// [修改] 增加 reD 参数和封闭边界逻辑
-double ModelWidget3::PWD_inf(double z, double fs1, double fs2, double M12, double LfD, double rmD, double reD, int nf, const QVector<double>& xwD) {
+double ModelWidget5::PWD_inf(double z, double fs1, double fs2, double M12, double LfD, double rmD, double reD, int nf, const QVector<double>& xwD) {
     using namespace boost::math;
     QVector<double> ywD(nf, 0.0);
-    double gama1 = sqrt(z * fs1);
-    double gama2 = sqrt(z * fs2);
+    double gama1 = sqrt(z * fs1); double gama2 = sqrt(z * fs2);
+    double arg_g2 = gama2 * rmD; double arg_g1 = gama1 * rmD;
+    double k0_g2 = cyl_bessel_k(0, arg_g2); double k1_g2 = cyl_bessel_k(1, arg_g2);
+    double k0_g1 = cyl_bessel_k(0, arg_g1); double k1_g1 = cyl_bessel_k(1, arg_g1);
 
-    double arg_g2_rm = gama2 * rmD;
-    double arg_g1_rm = gama1 * rmD;
+    // --- 定压边界 (Constant Pressure) ---
+    // mAB = -K0(g2*reD) / I0(g2*reD)
+    double arg_reD = gama2 * reD;
+    double k0_reD = cyl_bessel_k(0, arg_reD);
+    double i0_reD = cyl_bessel_i(0, arg_reD);
+    double mAB = 0.0;
+    if (i0_reD > 1e-200) mAB = -k0_reD / i0_reD;
 
-    // --- 封闭边界计算 mAB ---
-    // MATLAB: mAB = besselk(1,gama2*reD)/besseli(1,gama2*reD);
-    // 使用缩放 Bessel 函数防止溢出: I1(x) = scaled_I1(x) * exp(x)
-    double arg_re = gama2 * reD;
-    double k1_re = cyl_bessel_k(1, arg_re);
-    double i1_re_s = scaled_besseli(1, arg_re);
-    // mAB = k1_re / (i1_re_s * exp(arg_re))
-    // 下面在 Acup/Acdown 中使用时，利用指数抵消技巧
+    double besseli0_g2 = cyl_bessel_i(0, arg_g2);
+    double besseli1_g2 = cyl_bessel_i(1, arg_g2);
 
-    // --- 计算 Acup 和 Acdown ---
-    double k0_g2 = cyl_bessel_k(0, arg_g2_rm);
-    double k1_g2 = cyl_bessel_k(1, arg_g2_rm);
-    double k0_g1 = cyl_bessel_k(0, arg_g1_rm);
-    double k1_g1 = cyl_bessel_k(1, arg_g1_rm);
+    double term1_up = mAB * besseli0_g2 + k0_g2;
+    double term2_up = mAB * besseli1_g2 - k1_g2;
 
-    // MATLAB: mAB*besseli(0,gama2*rmD)
-    // = [k1_re / (i1_re_s * exp(arg_re))] * [scaled_i0(rm) * exp(rm)]
-    // = (k1_re / i1_re_s) * scaled_i0(rm) * exp(rm - re)
-    double i0_g2_s = scaled_besseli(0, arg_g2_rm);
-    double term_mAB_i0 = 0.0;
-    if (i1_re_s > 1e-100) {
-        term_mAB_i0 = (k1_re / i1_re_s) * i0_g2_s * std::exp(arg_g2_rm - arg_re);
-    }
+    double Acup = M12 * gama1 * k1_g1 * term1_up + gama2 * k0_g1 * term2_up;
 
-    // MATLAB: mAB*besseli(1,gama2*rmD)
-    double i1_g2_s = scaled_besseli(1, arg_g2_rm);
-    double term_mAB_i1 = 0.0;
-    if (i1_re_s > 1e-100) {
-        term_mAB_i1 = (k1_re / i1_re_s) * i1_g2_s * std::exp(arg_g2_rm - arg_re);
-    }
+    double i0_g1_s = scaled_besseli(0, arg_g1);
+    double i1_g1_s = scaled_besseli(1, arg_g1);
 
-    // MATLAB: Acup = M12*gama1*besselk(1,gama1*rmD)*(mAB*besseli(0,gama2*rmD)+besselk(0,gama2*rmD))+gama2*besselk(0,gama1*rmD)*(mAB*besseli(1,gama2*rmD)-besselk(1,gama2*rmD));
-    double term1 = term_mAB_i0 + k0_g2;
-    double term2 = term_mAB_i1 - k1_g2;
-    double Acup = M12 * gama1 * k1_g1 * term1 + gama2 * k0_g1 * term2;
-
-    // MATLAB: Acdown = M12*gama1*besseli(1,gama1*rmD)*(mAB*besseli(0,gama2*rmD)+besselk(0,gama2*rmD))-gama2*besseli(0,gama1*rmD)*(mAB*besseli(1,gama2*rmD)-besselk(1,gama2*rmD));
-    // 这里 besseli(1, gama1*rmD) 需要缩放处理，否则 Acup/Acdown 会很大
-    // 我们计算 Acdown_scaled，假设去掉了 exp(gama1*rmD) 因子，相应地 Acup 也需要去掉该因子
-    // 但这里 Acup 中各项是 K 类型，量级较小。Acdown 含有 I 类型，量级大。
-    // 直接计算 Ac = Acup / Acdown。
-    // 为了防止 Acdown 溢出，我们同时除以 exp(gama1*rmD)。
-
-    double i1_g1_s = scaled_besseli(1, arg_g1_rm);
-    double i0_g1_s = scaled_besseli(0, arg_g1_rm);
-
-    // Acdown_scaled = Acdown * exp(-arg_g1_rm)
-    double Acdown_scaled = M12 * gama1 * i1_g1_s * term1 - gama2 * i0_g1_s * term2;
-
-    // Acup_scaled = Acup * exp(-arg_g1_rm)
-    // Acup 由 BesselK 组成，K(x) ~ exp(-x)。 Acup 本身极小。
-    // 实际上我们需要 Ac * I0(x)。 I0(x) 极大。
-    // 令 Ac_prefactor = Acup / Acdown_scaled。
-    // 真正的 integrand term = Ac * I0(arg_dist)
-    // = (Acup / (Acdown_scaled * exp(arg_g1_rm))) * (scaled_i0(dist) * exp(dist))
-    // = (Acup / Acdown_scaled) * scaled_i0(dist) * exp(dist - arg_g1_rm)
+    double Acdown_scaled = M12 * gama1 * i1_g1_s * term1_up - gama2 * i0_g1_s * term2_up;
 
     if (std::abs(Acdown_scaled) < 1e-100) Acdown_scaled = 1e-100;
     double Ac_prefactor = Acup / Acdown_scaled;
@@ -520,13 +471,8 @@ double ModelWidget3::PWD_inf(double z, double fs1, double fs2, double M12, doubl
             auto integrand = [&](double a) -> double {
                 double dist = std::sqrt(std::pow(xwD[i] - xwD[j] - a, 2) + std::pow(ywD[i] - ywD[j], 2));
                 double arg_dist = gama1 * dist; if (arg_dist < 1e-10) arg_dist = 1e-10;
-
-                // 封闭边界时的 Ac 项
-                double term2 = 0.0;
-                double exponent = arg_dist - arg_g1_rm; // 指数部分
-                if (exponent > -700.0) {
-                    term2 = Ac_prefactor * scaled_besseli(0, arg_dist) * std::exp(exponent);
-                }
+                double term2 = 0.0; double exponent = arg_dist - arg_g1;
+                if (exponent > -700.0) term2 = Ac_prefactor * scaled_besseli(0, arg_dist) * std::exp(exponent);
                 return cyl_bessel_k(0, arg_dist) + term2;
             };
             double val = adaptiveGauss(integrand, -LfD, LfD, 1e-5, 0, 10);
@@ -537,24 +483,24 @@ double ModelWidget3::PWD_inf(double z, double fs1, double fs2, double M12, doubl
     return A_mat.fullPivLu().solve(b_vec)(nf);
 }
 
-double ModelWidget3::scaled_besseli(int v, double x) {
+double ModelWidget5::scaled_besseli(int v, double x) {
     if (x < 0) x = -x;
     if (x > 600.0) return 1.0 / std::sqrt(2.0 * M_PI * x);
     return boost::math::cyl_bessel_i(v, x) * std::exp(-x);
 }
-double ModelWidget3::gauss15(std::function<double(double)> f, double a, double b) {
+double ModelWidget5::gauss15(std::function<double(double)> f, double a, double b) {
     static const double X[] = { 0.0, 0.201194, 0.394151, 0.570972, 0.724418, 0.848207, 0.937299, 0.987993 };
     static const double W[] = { 0.202578, 0.198431, 0.186161, 0.166269, 0.139571, 0.107159, 0.070366, 0.030753 };
     double h = 0.5 * (b - a); double c = 0.5 * (a + b); double s = W[0] * f(c);
     for (int i = 1; i < 8; ++i) { double dx = h * X[i]; s += W[i] * (f(c - dx) + f(c + dx)); }
     return s * h;
 }
-double ModelWidget3::adaptiveGauss(std::function<double(double)> f, double a, double b, double eps, int depth, int maxDepth) {
+double ModelWidget5::adaptiveGauss(std::function<double(double)> f, double a, double b, double eps, int depth, int maxDepth) {
     double c = (a + b) / 2.0; double v1 = gauss15(f, a, b); double v2 = gauss15(f, a, c) + gauss15(f, c, b);
     if (depth >= maxDepth || std::abs(v1 - v2) < 1e-10 * std::abs(v2) + eps) return v2;
     return adaptiveGauss(f, a, c, eps/2, depth+1, maxDepth) + adaptiveGauss(f, c, b, eps/2, depth+1, maxDepth);
 }
-double ModelWidget3::stefestCoefficient(int i, int N) {
+double ModelWidget5::stefestCoefficient(int i, int N) {
     double s = 0.0; int k1 = (i + 1) / 2; int k2 = std::min(i, N / 2);
     for (int k = k1; k <= k2; ++k) {
         double num = pow(k, N / 2.0) * factorial(2 * k);
@@ -563,4 +509,4 @@ double ModelWidget3::stefestCoefficient(int i, int N) {
     }
     return ((i + N / 2) % 2 == 0 ? 1.0 : -1.0) * s;
 }
-double ModelWidget3::factorial(int n) { if(n<=1)return 1; double r=1; for(int i=2;i<=n;++i)r*=i; return r; }
+double ModelWidget5::factorial(int n) { if(n<=1)return 1; double r=1; for(int i=2;i<=n;++i)r*=i; return r; }

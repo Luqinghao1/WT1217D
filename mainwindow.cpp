@@ -5,13 +5,14 @@
 #include "dataeditorwidget.h"
 #include "modelmanager.h"
 #include "plottingwidget.h"
+#include "fittingpage.h" // [修改] 引入 FittingPage
 #include "fittingwidget.h"
 #include "settingswidget.h"
+#include "modelparameter.h"
 
 #include <QDateTime>
 #include <QMessageBox>
 #include <QDebug>
-#include <QRegularExpression>
 #include <QStandardItemModel>
 #include <QTimer>
 #include <QSpacerItem>
@@ -19,53 +20,36 @@
 #include <cmath>
 #include <QStatusBar>
 
-/**
- * @brief MainWindow 构造函数
- * 初始化主窗口界面、设置标题、最小宽度，并调用初始化流程。
- */
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_isProjectLoaded(false)
 {
     ui->setupUi(this);
-    // 设置窗口标题
     this->setWindowTitle("陆相泥纹型及混积型页岩油压裂水平井非均匀产液机制与试井解释方法研究");
-
-    // 由于标题较长，适当增加窗口最小宽度
     this->setMinimumWidth(1024);
-
     init();
 }
 
-/**
- * @brief 析构函数
- * 释放 UI 资源
- */
 MainWindow::~MainWindow()
 {
     delete ui;
 }
 
-/**
- * @brief 主初始化函数
- * 负责构建导航栏、初始化子页面堆栈、创建各个业务模块并建立信号连接。
- */
 void MainWindow::init()
 {
     // --- 1. 初始化导航栏按钮 ---
-    for(int i = 0 ; i<6;i++)  // 6个按钮（项目、数据、模型、图表、拟合、设置）
+    for(int i = 0 ; i<6;i++)
     {
         NavBtn* btn = new NavBtn(ui->widgetNav);
         btn->setMinimumWidth(110);
         btn->setIndex(i);
-        // 设置字体颜色为黑色
         btn->setStyleSheet("color: black;");
 
-        // 根据索引配置图标和文字
         switch (i) {
         case 0:
             btn->setPicName("border-image: url(:/new/prefix1/Resource/X0.png);",tr("项目"));
-            btn->setClickedStyle(); // 默认选中第一个
+            btn->setClickedStyle();
             ui->stackedWidget->setCurrentIndex(0);
             break;
         case 1:
@@ -89,10 +73,15 @@ void MainWindow::init()
         m_NavBtnMap.insert(btn->getName(),btn);
         ui->verticalLayoutNav->addWidget(btn);
 
-        // 连接按钮点击信号，处理页面切换和按钮样式互斥
         connect(btn,&NavBtn::sigClicked,[=](QString name)
                 {
-                    // 重置所有按钮样式
+                    int targetIndex = m_NavBtnMap.value(name)->getIndex();
+
+                    if ((targetIndex >= 1 && targetIndex <= 4) && !m_isProjectLoaded) {
+                        QMessageBox::warning(this, "提示", "请先在“项目”界面新建或打开一个项目！");
+                        return;
+                    }
+
                     QMap<QString,NavBtn*>::Iterator item = m_NavBtnMap.begin();
                     while (item != m_NavBtnMap.end()) {
                         if(item.key() != name)
@@ -101,11 +90,9 @@ void MainWindow::init()
                         }
                         item++;
                     }
-                    // 切换 StackedWidget 页面
-                    int targetIndex = m_NavBtnMap.value(name)->getIndex();
+
                     ui->stackedWidget->setCurrentIndex(targetIndex);
 
-                    // --- 特殊处理：切换页面时的数据传递 ---
                     if (name == tr("图表")) {
                         onTransferDataToPlotting();
                     }
@@ -115,11 +102,9 @@ void MainWindow::init()
                 });
     }
 
-    // 添加垂直弹性空间，防止按钮被拉伸变形
     QSpacerItem* verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
     ui->verticalLayoutNav->addSpacerItem(verticalSpacer);
 
-    // --- 2. 初始化时间显示 ---
     ui->labelTime->setText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss").replace(" ","\n"));
     connect(&m_timer,&QTimer::timeout,[=]
             {
@@ -127,8 +112,6 @@ void MainWindow::init()
                 ui->labelTime->setStyleSheet("color: black;");
             });
     m_timer.start(1000);
-
-    // --- 3. 初始化各业务子模块 ---
 
     // 3.1 监控界面
     m_MonitorWidget = new MonitorWidget(ui->pageMonitor);
@@ -142,7 +125,7 @@ void MainWindow::init()
     connect(m_DataEditorWidget, &DataEditorWidget::fileChanged, this, &MainWindow::onFileLoaded);
     connect(m_DataEditorWidget, &DataEditorWidget::dataChanged, this, &MainWindow::onDataEditorDataChanged);
 
-    // 3.3 模型管理器 (无 UI，挂载在参数页)
+    // 3.3 模型管理器
     m_ModelManager = new ModelManager(this);
     m_ModelManager->initializeModels(ui->pageParamter);
     connect(m_ModelManager, &ModelManager::calculationCompleted,
@@ -154,19 +137,15 @@ void MainWindow::init()
     connect(m_PlottingWidget, &PlottingWidget::analysisCompleted,
             this, &MainWindow::onPlotAnalysisCompleted);
 
-    // 3.5 拟合界面
+    // 3.5 拟合界面 (修改为 FittingPage)
     if (ui->pageFitting && ui->verticalLayoutFitting) {
-        m_FittingWidget = new FittingWidget(ui->pageFitting);
-        ui->verticalLayoutFitting->addWidget(m_FittingWidget);
-
-        connect(m_FittingWidget, &FittingWidget::fittingCompleted,
-                this, &MainWindow::onFittingCompleted);
-        // 连接进度信号
-        connect(m_FittingWidget, &FittingWidget::sigProgress,
-                this, &MainWindow::onFittingProgressChanged);
+        m_FittingPage = new FittingPage(ui->pageFitting); // [修改]
+        ui->verticalLayoutFitting->addWidget(m_FittingPage);
+        m_FittingPage->setModelManager(m_ModelManager);
+        // FittingPage 内部管理逻辑，不需要手动连接单个 fittingwidget 的 completed 信号
     } else {
         qWarning() << "MainWindow: pageFitting或verticalLayoutFitting为空！无法创建拟合界面";
-        m_FittingWidget = nullptr;
+        m_FittingPage = nullptr;
     }
 
     // 3.6 设置界面
@@ -180,7 +159,6 @@ void MainWindow::init()
     connect(m_SettingsWidget, &SettingsWidget::backupSettingsChanged,
             this, &MainWindow::onBackupSettingsChanged);
 
-    // 调用各子模块的额外初始化逻辑
     initMonitorForm();
     initDataEditorForm();
     initModelForm();
@@ -188,46 +166,42 @@ void MainWindow::init()
     initFittingForm();
 }
 
-// 以下为空实现的初始化占位函数，预留给未来扩展
 void MainWindow::initMonitorForm() { qDebug() << "初始化监控界面"; }
 void MainWindow::initDataEditorForm() { qDebug() << "初始化数据编辑器界面"; }
 void MainWindow::initModelForm() { if (m_ModelManager) qDebug() << "模型界面初始化完成"; }
 void MainWindow::initPlottingForm() { qDebug() << "初始化绘图界面"; }
+void MainWindow::initFittingForm() { if (m_FittingPage) qDebug() << "拟合界面初始化完成"; }
 
-/**
- * @brief 初始化拟合界面依赖
- * 将 ModelManager 指针注入 FittingWidget，使其能调用核心计算算法
- */
-void MainWindow::initFittingForm()
-{
-    if (m_FittingWidget && m_ModelManager) {
-        m_FittingWidget->setModelManager(m_ModelManager);
-        qDebug() << "拟合界面初始化完成，依赖已注入";
-    }
-}
-
-/**
- * @brief 处理新项目创建信号
- * 切换到模型页面并更新导航状态
- */
 void MainWindow::onProjectCreated()
 {
-    qDebug() << "处理新项目创建";
-    QMessageBox::information(this, tr("项目创建"), tr("新项目已创建成功！"));
-    ui->stackedWidget->setCurrentIndex(2);
+    qDebug() << "项目已新建或打开，正在刷新全局参数...";
+    m_isProjectLoaded = true;
+
+    // 1. 刷新模型界面
+    if (m_ModelManager) {
+        m_ModelManager->updateAllModelsBasicParameters();
+    }
+
+    // 2. 刷新拟合界面 (读取多页数据)
+    if (m_FittingPage) {
+        m_FittingPage->updateBasicParameters();
+        m_FittingPage->loadAllFittingStates(); // [修改]
+    }
+
     updateNavigationState();
+    QMessageBox::information(this, "提示", "项目加载成功，参数已更新。");
 }
 
-/**
- * @brief 处理文件加载信号
- * 切换到数据页面，并通知数据编辑器加载内容
- */
 void MainWindow::onFileLoaded(const QString& filePath, const QString& fileType)
 {
-    qDebug() << "MainWindow收到文件加载/更换通知：" << filePath;
-    ui->stackedWidget->setCurrentIndex(1);
+    qDebug() << "文件加载：" << filePath;
+    if (!m_isProjectLoaded) {
+        QMessageBox::warning(this, "警告", "请先创建或打开项目！");
+        return;
+    }
 
-    // 更新导航按钮状态
+    ui->stackedWidget->setCurrentIndex(1); // 跳转到数据页
+
     QMap<QString,NavBtn*>::Iterator item = m_NavBtnMap.begin();
     while (item != m_NavBtnMap.end()) {
         ((NavBtn*)(item.value()))->setNormalStyle();
@@ -240,7 +214,6 @@ void MainWindow::onFileLoaded(const QString& filePath, const QString& fileType)
     if (m_DataEditorWidget && sender() != m_DataEditorWidget) {
         m_DataEditorWidget->loadData(filePath, fileType);
     }
-
     m_hasValidData = true;
     QTimer::singleShot(1000, this, &MainWindow::onDataReadyForPlotting);
 }
@@ -257,15 +230,12 @@ void MainWindow::onDataReadyForPlotting()
 
 void MainWindow::onTransferDataToPlotting()
 {
-    if (!hasDataLoaded()) {
-        return;
-    }
+    if (!hasDataLoaded()) return;
     transferDataFromEditorToPlotting();
 }
 
 void MainWindow::onDataEditorDataChanged()
 {
-    // 如果当前在图表页或拟合页，数据变动时实时更新
     if (ui->stackedWidget->currentIndex() == 3) {
         transferDataFromEditorToPlotting();
     }
@@ -277,102 +247,59 @@ void MainWindow::onModelCalculationCompleted(const QString &analysisType, const 
     qDebug() << "模型计算完成：" << analysisType;
 }
 
-// -------------------------------------------------------------------------
-// 拟合模块数据传递逻辑
-// -------------------------------------------------------------------------
-
-/**
- * @brief 将数据从编辑器传递到拟合模块
- * 包括：读取原始数据、计算压差、计算 Bourdet 导数
- */
 void MainWindow::transferDataToFitting()
 {
-    if (!m_FittingWidget || !m_DataEditorWidget) return;
-
-    qDebug() << "正在同步数据至拟合模块...";
+    if (!m_FittingPage || !m_DataEditorWidget) return;
 
     QStandardItemModel* model = m_DataEditorWidget->getDataModel();
-
-    // 如果没有数据，传递空向量以清空图表
     if (!model || model->rowCount() == 0) {
-        m_FittingWidget->setObservedData(QVector<double>(), QVector<double>(), QVector<double>());
         return;
     }
 
     QVector<double> tVec, pVec, dVec;
     double p_initial = 0.0;
-    // bool p_init_found = false; // 已删除，避免未使用变量警告
 
-    // 1. 扫描初始压力 (P0)
-    // 假设第2列(index 1)是压力列
     for(int r=0; r<model->rowCount(); ++r) {
         QModelIndex idx = model->index(r, 1);
         if(idx.isValid()) {
             double p = idx.data().toDouble();
-            if (std::abs(p) > 1e-6) { // 找到第一个非零压力作为初始压力
+            if (std::abs(p) > 1e-6) {
                 p_initial = p;
-                // p_init_found = true;
                 break;
             }
         }
     }
 
-    // 2. 读取数据并转换为 Delta P
     for(int r=0; r<model->rowCount(); ++r) {
-        double t = model->index(r, 0).data().toDouble(); // 第1列：时间
-        double p_raw = model->index(r, 1).data().toDouble(); // 第2列：压力
-
+        double t = model->index(r, 0).data().toDouble();
+        double p_raw = model->index(r, 1).data().toDouble();
         if (t > 0) {
             tVec.append(t);
-            // [核心] 转换为压力差: Delta P = |P - P_initial|
             pVec.append(std::abs(p_raw - p_initial));
         }
     }
 
-    // 3. 自动计算导数 (Bourdet 算法)
     dVec.resize(tVec.size());
     if (tVec.size() > 2) {
         dVec[0] = 0;
         dVec[tVec.size()-1] = 0;
-
         for(int i=1; i<tVec.size()-1; ++i) {
             double lnt1 = std::log(tVec[i-1]);
             double lnt2 = std::log(tVec[i]);
             double lnt3 = std::log(tVec[i+1]);
-
-            // 防止时间点重复导致除零
             if (std::abs(lnt2 - lnt1) < 1e-9 || std::abs(lnt3 - lnt2) < 1e-9) {
-                dVec[i] = 0;
-                continue;
+                dVec[i] = 0; continue;
             }
-
-            // 对数时间的差分
             double d1 = (pVec[i] - pVec[i-1]) / (lnt2 - lnt1);
             double d2 = (pVec[i+1] - pVec[i]) / (lnt3 - lnt2);
-
-            // Bourdet 加权平均
             double w1 = (lnt3 - lnt2) / (lnt3 - lnt1);
             double w2 = (lnt2 - lnt1) / (lnt3 - lnt1);
-
             dVec[i] = d1 * w1 + d2 * w2;
         }
     }
 
-    // 将处理好的一套数据（时间、压差、导数）传递给拟合模块
-    m_FittingWidget->setObservedData(tVec, pVec, dVec);
-}
-
-void MainWindow::onFittingCompleted(ModelManager::ModelType modelType, const QMap<QString, double> &parameters)
-{
-    QString typeName = ModelManager::getModelTypeName(modelType);
-    QString msg = QString("拟合完成！\n模型: %1\n\n最优参数:\n").arg(typeName);
-
-    QMapIterator<QString, double> i(parameters);
-    while (i.hasNext()) {
-        i.next();
-        msg += QString("%1: %2\n").arg(i.key()).arg(i.value(), 0, 'f', 6);
-    }
-    QMessageBox::information(this, "拟合结果", msg);
+    // [修改] 将数据传递给当前激活的 FittingWidget
+    m_FittingPage->setObservedDataToCurrent(tVec, pVec, dVec);
 }
 
 void MainWindow::onFittingProgressChanged(int progress)
@@ -383,38 +310,10 @@ void MainWindow::onFittingProgressChanged(int progress)
     }
 }
 
-// -------------------------------------------------------------------------
-
-void MainWindow::onSystemSettingsChanged()
-{
-    qDebug() << "系统设置已更改";
-}
-
-void MainWindow::onAutoSaveIntervalChanged(int interval)
-{
-    qDebug() << "自动保存间隔已更改为：" << interval << "分钟";
-    static QTimer* autoSaveTimer = nullptr;
-    if (!autoSaveTimer) {
-        autoSaveTimer = new QTimer(this);
-        connect(autoSaveTimer, &QTimer::timeout, this, [this]() {
-            qDebug() << "执行自动保存...";
-        });
-    }
-    autoSaveTimer->stop();
-    if (interval > 0) {
-        autoSaveTimer->start(interval * 60 * 1000);
-    }
-}
-
-void MainWindow::onBackupSettingsChanged(bool enabled)
-{
-    qDebug() << "备份设置已更改：" << (enabled ? "启用" : "禁用");
-}
-
-void MainWindow::onPerformanceSettingsChanged()
-{
-    qDebug() << "性能设置已更改";
-}
+void MainWindow::onSystemSettingsChanged() {}
+void MainWindow::onAutoSaveIntervalChanged(int interval) { Q_UNUSED(interval); }
+void MainWindow::onBackupSettingsChanged(bool enabled) { Q_UNUSED(enabled); }
+void MainWindow::onPerformanceSettingsChanged() {}
 
 QStandardItemModel* MainWindow::getDataEditorModel() const
 {
@@ -437,14 +336,12 @@ bool MainWindow::hasDataLoaded()
 void MainWindow::transferDataFromEditorToPlotting()
 {
     if (!m_DataEditorWidget || !m_PlottingWidget) return;
-
     QStandardItemModel* model = m_DataEditorWidget->getDataModel();
     if (model && model->rowCount() > 0 && model->columnCount() > 0) {
         QString fileName = m_DataEditorWidget->getCurrentFileName();
         m_PlottingWidget->setTableDataFromModel(model, fileName);
         m_hasValidData = true;
     } else {
-        // 如果是绘图界面，暂保留演示数据以展示功能
         WellTestData wellData = createDemoWellTestData();
         m_PlottingWidget->setWellTestData(wellData);
         m_hasValidData = true;
@@ -457,20 +354,13 @@ WellTestData MainWindow::createDemoWellTestData()
     wellData.wellName = "演示井-001";
     wellData.testType = "压力恢复试井";
     wellData.testDate = QDateTime::currentDateTime();
-
     int dataPoints = 150;
     for (int i = 0; i < dataPoints; ++i) {
         double time = 0.01 * std::pow(10, i * 4.0 / dataPoints);
         double pressure = 20.0;
-        if (time < 0.1) {
-            pressure += 3.0 * (1.0 - std::exp(-time * 10));
-        }
-        else if (time < 10) {
-            pressure += 2.5 + 1.5 * std::log10(time);
-        }
-        else {
-            pressure += 2.5 + 1.5 * std::log10(time) + 0.5 * std::log10(time / 10);
-        }
+        if (time < 0.1) pressure += 3.0 * (1.0 - std::exp(-time * 10));
+        else if (time < 10) pressure += 2.5 + 1.5 * std::log10(time);
+        else pressure += 2.5 + 1.5 * std::log10(time) + 0.5 * std::log10(time / 10);
         pressure += 0.05 * std::sin(i * 0.3) + 0.02 * (rand() % 100 - 50) / 50.0;
         wellData.time.append(time);
         wellData.pressure.append(pressure);
@@ -483,7 +373,7 @@ void MainWindow::updateNavigationState()
     QMap<QString,NavBtn*>::Iterator item = m_NavBtnMap.begin();
     while (item != m_NavBtnMap.end()) {
         ((NavBtn*)(item.value()))->setNormalStyle();
-        if(item.key() == tr("模型")) {
+        if(item.key() == tr("项目")) {
             ((NavBtn*)(item.value()))->setClickedStyle();
         }
         item++;

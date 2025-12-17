@@ -5,13 +5,13 @@
 #include <QMap>
 #include <QTimer>
 #include <QStandardItemModel>
-#include "modelmanager.h" // [修复] 必须包含，因为用到了 ModelType
+#include "modelmanager.h"
 
 class NavBtn;
 class MonitorWidget;
 class DataEditorWidget;
 class PlottingWidget;
-class FittingWidget;
+class FittingPage; // [修改] 使用 FittingPage
 class SettingsWidget;
 
 struct WellTestData;
@@ -36,7 +36,7 @@ public:
     void initFittingForm();
 
 private slots:
-    void onProjectCreated();
+    void onProjectCreated(); // 兼顾新建和打开项目成功
     void onFileLoaded(const QString& filePath, const QString& fileType);
     void onPlotAnalysisCompleted(const QString &analysisType, const QMap<QString, double> &results);
     void onDataReadyForPlotting();
@@ -48,9 +48,7 @@ private slots:
     void onPerformanceSettingsChanged();
     void onModelCalculationCompleted(const QString &analysisType, const QMap<QString, double> &results);
 
-    // [修复] 参数类型 ModelManager::ModelType
-    void onFittingCompleted(ModelManager::ModelType modelType, const QMap<QString, double> &parameters);
-
+    // 拟合进度信号（可选保留用于状态栏）
     void onFittingProgressChanged(int progress);
 
 private:
@@ -59,11 +57,14 @@ private:
     DataEditorWidget* m_DataEditorWidget;
     ModelManager* m_ModelManager;
     PlottingWidget* m_PlottingWidget;
-    FittingWidget* m_FittingWidget;
+    FittingPage* m_FittingPage; // [修改] 拟合页面管理器
     SettingsWidget* m_SettingsWidget;
     QMap<QString,NavBtn*> m_NavBtnMap;
     QTimer m_timer;
     bool m_hasValidData = false;
+
+    // 是否已加载项目（新建或打开）
+    bool m_isProjectLoaded = false;
 
     void transferDataFromEditorToPlotting();
     void updateNavigationState();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ModelWidget1</class>
- <widget class="QWidget" name="ModelWidget1">
+ <class>ModelWidget5</class>
+ <widget class="QWidget" name="ModelWidget5">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ModelWidget1 - 变井储压裂水平井</string>
+   <string>ModelWidget5 - 变井储定压边界</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget { color: black; font-family: &quot;Microsoft YaHei&quot;; font-size: 10pt; } QGroupBox { font-weight: bold; border: 1px solid gray; margin-top: 10px; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; } QLineEdit { padding: 2px; } QLabel { padding-right: 5px; }</string>
@@ -237,6 +237,16 @@
            <widget class="QLineEdit" name="remda1Edit"/>
           </item>
           <item row="10" column="0">
+           <widget class="QLabel" name="label_reD">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;外边界半径 r&lt;sub&gt;eD&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="1">
+           <widget class="QLineEdit" name="reDEdit"/>
+          </item>
+          <item row="11" column="0">
            <widget class="QLabel" name="label_gamaD">
             <property name="styleSheet">
              <string notr="true">color: blue; font-weight: bold;</string>
@@ -244,32 +254,29 @@
             <property name="text">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;压敏系数 γ&lt;sub&gt;D&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <property name="toolTip">
-             <string>渗透率模量</string>
-            </property>
            </widget>
           </item>
-          <item row="10" column="1">
+          <item row="11" column="1">
            <widget class="QLineEdit" name="gamaDEdit"/>
           </item>
-          <item row="11" column="0">
+          <item row="12" column="0">
            <widget class="QLabel" name="label_cD">
             <property name="text">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;井筒储集 C&lt;sub&gt;D&lt;/sub&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
           </item>
-          <item row="11" column="1">
+          <item row="12" column="1">
            <widget class="QLineEdit" name="cDEdit"/>
           </item>
-          <item row="12" column="0">
+          <item row="13" column="0">
            <widget class="QLabel" name="label_s">
             <property name="text">
              <string>表皮系数 S:</string>
             </property>
            </widget>
           </item>
-          <item row="12" column="1">
+          <item row="13" column="1">
            <widget class="QLineEdit" name="sEdit"/>
           </item>
          </layout>
